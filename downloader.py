@@ -1,6 +1,7 @@
 #!python3
 from urllib.parse import urlparse, unquote
 
+import sys
 import appdirs
 import argparse
 import json
@@ -147,8 +148,7 @@ def doDownload(manifest):
                 continue
 
         # File is not cached and needs to be downloaded
-        projectResponse = sess.get("http://minecraft.curseforge.com/mc-mods/%s" % (dependency['projectID']), stream=True)
-        projectResponse.url = projectResponse.url.replace('?cookieTest=1', '')
+        projectResponse = sess.get("https://minecraft.curseforge.com/projects/%s" % (dependency['projectID']), stream=True)
         fileResponse = sess.get("%s/files/%s/download" % (projectResponse.url, dependency['fileID']), stream=True)
         while fileResponse.is_redirect:
             source = fileResponse
