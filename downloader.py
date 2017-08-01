@@ -1,6 +1,7 @@
 #!python3
 from urllib.parse import urlparse, unquote
 
+import sys
 import appdirs
 import argparse
 import json
@@ -14,71 +15,7 @@ from tkinter import ttk, filedialog
 
 parser = argparse.ArgumentParser(description="Download Curse modpack mods")
 parser.add_argument("--manifest", help="manifest.json file from unzipped pack")
-parser.add_argument("--nogui", dest="gui", action="store_false", help="Do not use gui to to select manifest")
-parser.add_argument("--portable", dest="portable", action="store_true", help="Use portable cache")
 args, unknown = parser.parse_known_args()
-
-class downloadUI(ttk.Frame):
-    def __init__(self):
-        self.root = Tk()
-        self.root.columnconfigure(0, weight=1)
-        self.root.rowconfigure(0, weight=1)
-        self.parent = ttk.Frame(self.root)
-        self.parent.grid(column=0, row=0, sticky=(N, S, E, W))
-        self.parent.columnconfigure(0, weight=1)
-        self.parent.rowconfigure(0, weight=1)
-        ttk.Frame.__init__(self, self.parent, padding=(6,6,14,14))
-        self.grid(column=0, row=0, sticky=(N, S, E, W))
-        self.columnconfigure(0, weight=1)
-        self.rowconfigure(2, weight=1)
-
-        self.root.title("Curse Pack Downloader")
-
-        self.manifestPath = StringVar()
-
-        chooserContainer = ttk.Frame(self)
-        self.chooserText = ttk.Label(chooserContainer, text="Locate 'manifest.json': ")
-        chooserEntry = ttk.Entry(chooserContainer, textvariable=self.manifestPath)
-        self.chooserButton = ttk.Button(chooserContainer, text="Browse", command=self.chooseFile)
-        self.chooserText.grid(column=0, row=0, sticky=W)
-        chooserEntry.grid(column=1, row=0, sticky=(E,W), padx=5)
-        self.chooserButton.grid(column=2, row=0, sticky=E)
-        chooserContainer.grid(column=0, row=0, sticky=(E,W))
-        chooserContainer.columnconfigure(1, weight=1)
-        downloadButton = ttk.Button(self, text="Download mods", command=self.goDownload)
-        downloadButton.grid(column=0, row=1, sticky=(E,W))
-
-        self.logText = Text(self, state="disabled", wrap="none")
-        self.logText.grid(column=0, row=2, sticky=(N,E,S,W))
-
-        self.logScroll = Scrollbar(self, command=self.logText.yview)
-        self.logScroll.grid(column=1, row=2, sticky=(N,E,S,W))
-        self.logText['yscrollcommand'] = self.logScroll.set
-
-    def chooseFile(self):
-        filePath = filedialog.askopenfilename(
-                filetypes=(("Json files", "*.json"),),
-                initialdir=os.path.expanduser("~"),
-                parent=self)
-        self.manifestPath.set(filePath)
-
-    def goDownload(self):
-        t = Thread(target=self.goDownloadBackground)
-        t.start()
-
-    def goDownloadBackground(self):
-        self.chooserButton.configure(state="disabled")
-        doDownload(self.manifestPath.get())
-        self.chooserButton.configure(state="enabled")
-
-    def setOutput(self, message):
-        self.logText["state"] = "normal"
-        self.logText.insert("end", message + "\n")
-        self.logText.see(END)
-        self.logText["state"] = "disabled"
-
-    def setManifest(self, fileName):
-        self.manifestPath.set(fileName)
 
 class headlessUI():
     def setOutput(self, message):
@@ -104,12 +41,11 @@ def doDownload(manifest):
     cache_path = Path(downloaderDirs.user_cache_dir, "curseCache")
 
     # Attempt to set proper portable data directory if asked for
-    if args.portable:
-        if '__file__' in globals():
-            cache_path = Path(os.path.dirname(os.path.realpath(__file__)), "CPD_data")
-        else:
-            print("Portable data dir not supported for interpreter environment")
-            exit(2)
+    if '__file__' in globals():
+        cache_path = Path(os.path.dirname(os.path.realpath(__file__)), "CPD_data")
+    else:
+        print("Portable data dir not supported for interpreter environment")
+        exit(2)
 
     if not cache_path.exists():
         cache_path.mkdir(parents=True)
@@ -213,13 +149,7 @@ def doDownload(manifest):
 
             i += 1
 
-if args.gui:
-    programGui = downloadUI()
-    if args.manifest is not None:
-        programGui.setManifest(args.manifest)
-    programGui.root.mainloop()
-else:
-    programGui = headlessUI()
-    doDownload(args.manifest)
+programGui = headlessUI()
+doDownload(args.manifest)
 
 
